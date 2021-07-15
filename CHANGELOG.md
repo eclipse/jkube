@@ -21,6 +21,9 @@ Usage:
 ./scripts/extract-changelog-for-version.sh 1.3.37 5
 ```
 ### 1.4.0-SNAPSHOT
+* Fix #425: Multi-layer support for Container Images
+* Fix #548: Define property for skipping cluster autodetect/offline mode
+* Fix #551: Add Configuration options to IngressEnricher
 * Fix #741: Private constructor added to Utility classes
 * Fix #725: Upgrade HttpClient from 4.5.10 to 4.5.13
 * Fix #653: `k8s:watch` port-forward websocket error due to wrong arguments in PortForwardService
@@ -31,9 +34,7 @@ Usage:
 * Fix #718: Port fabric8io/docker-maven-plugin#1318: Update ECR authorization token URL
 * Fix #730: Port fabric8io/docker-maven-plugin#1311: Use AWS SDK to fetch AWS credentials
 * Fix #710: Support DockerImage as output for Openshift builds
-* Fix #548: Define property for skipping cluster autodetect/offline mode
 * Fix #701: Update Fabric8 Kubernetes Client to 5.4.0
-* Fix #425: Multi-layer support for Container Images
 * Fix #751: QuarkusGenerator: Multi-layer images for the different Quarkus packaging modes
 * Fix #756: Service re-apply error happening during `k8s:watch`
 
