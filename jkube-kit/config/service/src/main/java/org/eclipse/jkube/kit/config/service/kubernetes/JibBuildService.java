@@ -126,7 +126,7 @@ public class JibBuildService extends AbstractImageBuildService {
               jibLogger
             );
         } catch (Exception ex) {
-            throw new JKubeServiceException("Error when push JIB image", ex);
+            throw new JKubeServiceException(getHintFromException(ex), ex);
         }
     }
 
