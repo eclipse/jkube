@@ -108,7 +108,7 @@ class OpenShiftBuildServiceUtilsTest {
     // Given
     final ImageName imageName = new ImageName("registry/name:tag");
     // When
-    final String result = computeS2IBuildName(new BuildServiceConfig(), imageName);
+    final String result = computeS2IBuildName(imageConfiguration, new BuildServiceConfig(), imageName);
     // Then
     assertThat(result).isEqualTo("name");
   }
@@ -122,7 +122,7 @@ class OpenShiftBuildServiceUtilsTest {
         .build();
     final ImageName imageName = new ImageName("registry/name:tag");
     // When
-    final String result = computeS2IBuildName(buildServiceConfig, imageName);
+    final String result = computeS2IBuildName(imageConfiguration, buildServiceConfig, imageName);
     // Then
     assertThat(result).isEqualTo("name-s2i");
   }
@@ -132,12 +132,14 @@ class OpenShiftBuildServiceUtilsTest {
     // Given
     final BuildServiceConfig buildServiceConfig = BuildServiceConfig.builder()
         .jKubeBuildStrategy(JKubeBuildStrategy.s2i)
-        .s2iBuildNameSuffix("-custom")
         .buildDirectory(temporaryFolder.getAbsolutePath())
+        .build();
+    imageConfiguration = imageConfiguration.toBuilder()
+        .build(imageConfiguration.getBuild().toBuilder().openshiftS2iBuildNameSuffix("-custom").build())
         .build();
     final ImageName imageName = new ImageName("registry/name:tag");
     // When
-    final String result = computeS2IBuildName(buildServiceConfig, imageName);
+    final String result = computeS2IBuildName(imageConfiguration, buildServiceConfig, imageName);
     // Then
     assertThat(result).isEqualTo("name-custom");
   }
@@ -216,7 +218,7 @@ class OpenShiftBuildServiceUtilsTest {
   @Test
   void createBuildOutput_withDefaults_shouldReturnImageStreamTag() {
     // When
-    final BuildOutput result = createBuildOutput(new BuildServiceConfig(), new ImageName("my-app-image"));
+    final BuildOutput result = createBuildOutput(imageConfiguration, new ImageName("my-app-image"));
     // Then
     assertThat(result)
         .extracting(BuildOutput::getTo)
@@ -228,12 +230,16 @@ class OpenShiftBuildServiceUtilsTest {
   void createBuildOutput_withOutputKindDockerAndPushSecret_shouldReturnDocker() {
     // Given
     final BuildServiceConfig buildServiceConfig = BuildServiceConfig.builder()
-        .buildOutputKind("DockerImage")
-        .openshiftPushSecret("my-push-secret")
         .buildDirectory(temporaryFolder.getAbsolutePath())
         .build();
+    imageConfiguration = imageConfiguration.toBuilder()
+        .build(imageConfiguration.getBuild().toBuilder()
+            .openshiftBuildOutputKind("DockerImage")
+            .openshiftPushSecret("my-push-secret")
+            .build())
+        .build();
     // When
-    final BuildOutput result = createBuildOutput(buildServiceConfig, new ImageName("my-app-image"));
+    final BuildOutput result = createBuildOutput(imageConfiguration, new ImageName("my-app-image"));
     // Then
     assertThat(result)
         .hasFieldOrPropertyWithValue("pushSecret.name", "my-push-secret")

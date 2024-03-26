@@ -25,6 +25,7 @@ import org.eclipse.jkube.kit.config.image.build.JKubeBuildStrategy;
 import org.eclipse.jkube.kit.config.resource.RuntimeMode;
 import org.eclipse.jkube.kit.config.resource.ProcessorConfig;
 
+import java.util.Date;
 import java.util.Optional;
 
 /**
@@ -46,6 +47,16 @@ public class GeneratorContext {
     private boolean prePackagePhase;
 
     private GeneratorMode generatorMode;
+    private Date buildTimestamp;
+    private String sourceDirectory;
+    private String filter;
+    private boolean openshiftForcePull;
+    private String openshiftS2iBuildNameSuffix;
+    private boolean openshiftS2iImageStreamLookupPolicyLocal;
+    private String openshiftPullSecret;
+    private String openshiftPushSecret;
+    private String openshiftBuildOutputKind;
+    private String openshiftBuildRecreate;
 
 
     public GeneratorMode getGeneratorMode() {

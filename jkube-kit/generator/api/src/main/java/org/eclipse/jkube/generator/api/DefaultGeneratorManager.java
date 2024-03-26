@@ -13,13 +13,23 @@
  */
 package org.eclipse.jkube.generator.api;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jkube.kit.build.api.helper.ImageConfigResolver;
+import org.eclipse.jkube.kit.build.api.helper.ImageNameFormatter;
 import org.eclipse.jkube.kit.common.KitLogger;
 import org.eclipse.jkube.kit.common.util.ClassUtil;
 import org.eclipse.jkube.kit.common.util.PluginServiceFactory;
 import org.eclipse.jkube.kit.config.image.GeneratorManager;
 import org.eclipse.jkube.kit.config.image.ImageConfiguration;
+import org.eclipse.jkube.kit.config.image.build.BuildConfiguration;
 
 /**
  * Manager responsible for finding and calling generators
@@ -36,6 +46,85 @@ public class DefaultGeneratorManager implements GeneratorManager {
 
   public DefaultGeneratorManager(GeneratorContext context) {
     this.genCtx = context;
+  }
+
+  @Override
+  public List<ImageConfiguration> generateAndMerge(List<ImageConfiguration> unresolvedImages) {
+    ImageConfigResolver imageConfigResolver = new ImageConfigResolver();
+    final ImageNameFormatter imageNameFormatter = new ImageNameFormatter(genCtx.getProject(), genCtx.getBuildTimestamp());
+    // Resolve images
+    final List<ImageConfiguration> resolvedImages = resolveImages(unresolvedImages, (ImageConfiguration image) -> imageConfigResolver.resolve(image, genCtx.getProject()));
+
+    // Init and validate Image configurations. After this step, getResolvedImages() contains the valid configuration.
+    for (ImageConfiguration imageConfiguration : resolvedImages) {
+      imageConfiguration.setName(imageNameFormatter.format(imageConfiguration.getName()));
+      if (imageConfiguration.getBuild() != null) {
+        BuildConfiguration updatedBuildConfig = mergeGlobalConfigParamsWithSingleImageBuildConfig(imageConfiguration.getBuild());
+        imageConfiguration.setBuild(updatedBuildConfig);
+        imageConfiguration.getBuild().initAndValidate();
+      }
+      printDockerfileInfoIfDockerfileMode(imageConfiguration);
+    }
+
+    return resolvedImages;
+  }
+
+  private void printDockerfileInfoIfDockerfileMode(ImageConfiguration imageConfiguration) {
+    BuildConfiguration buildConfiguration = imageConfiguration.getBuildConfiguration();
+    if (buildConfiguration != null &&  buildConfiguration.isDockerFileMode()) {
+      genCtx.getLogger().info("Using Dockerfile: %s", buildConfiguration.getDockerFile().getAbsolutePath());
+      genCtx.getLogger().info("Using Docker Context Directory: %s", buildConfiguration.getAbsoluteContextDirPath(genCtx.getSourceDirectory(), genCtx.getProject().getBaseDirectory().getAbsolutePath()));
+    }
+  }
+
+  private List<ImageConfiguration> resolveImages(List<ImageConfiguration> images, Function<ImageConfiguration, List<ImageConfiguration>> imageResolver) {
+    List<ImageConfiguration> ret = resolveConfiguration(imageResolver, images);
+    ret = generate(ret);
+    final List<ImageConfiguration> filtered =  filterImages(ret);
+    if (!ret.isEmpty() && filtered.isEmpty() && genCtx.getFilter() != null) {
+      final List<String> imageNames = ret.stream().map(ImageConfiguration::getName).collect(Collectors.toList());
+      genCtx.getLogger().warn("None of the resolved images [%s] match the configured filter '%s'",
+          String.join(",", imageNames), genCtx.getFilter());
+    }
+    return filtered;
+  }
+
+  private static List<ImageConfiguration> resolveConfiguration(Function<ImageConfiguration, List<ImageConfiguration>> imageResolver,
+                                                               List<ImageConfiguration> unresolvedImages) {
+    List<ImageConfiguration> ret = new ArrayList<>();
+    if (unresolvedImages != null) {
+      for (ImageConfiguration image : unresolvedImages) {
+        ret.addAll(imageResolver.apply(image));
+      }
+      verifyImageNames(ret);
+    }
+    return ret;
+  }
+
+  private static void verifyImageNames(List<ImageConfiguration> ret) {
+    for (ImageConfiguration config : ret) {
+      if (config.getName() == null) {
+        throw new IllegalArgumentException("Configuration error: <image> must have a non-null <name>");
+      }
+    }
+  }
+
+  private List<ImageConfiguration> filterImages(List<ImageConfiguration> imagesToFilter) {
+    List<ImageConfiguration> ret = new ArrayList<>();
+    for (ImageConfiguration imageConfig : imagesToFilter) {
+      if (matchesConfiguredImages(genCtx.getFilter(), imageConfig)) {
+        ret.add(imageConfig);
+      }
+    }
+    return ret;
+  }
+
+  private boolean matchesConfiguredImages(String imageList, ImageConfiguration imageConfig) {
+    if (imageList == null) {
+      return true;
+    }
+    Set<String> imagesAllowed = new HashSet<>(Arrays.asList(imageList.split(",")));
+    return imagesAllowed.contains(imageConfig.getName()) || imagesAllowed.contains(imageConfig.getAlias());
   }
 
   @Override
@@ -60,5 +149,32 @@ public class DefaultGeneratorManager implements GeneratorManager {
       }
     }
     return ret;
+  }
+
+  private BuildConfiguration mergeGlobalConfigParamsWithSingleImageBuildConfig(BuildConfiguration build) {
+    BuildConfiguration.BuildConfigurationBuilder buildConfigBuilder = build.toBuilder();
+    if (!build.isOpenshiftForcePull() && genCtx.isOpenshiftForcePull()) {
+      buildConfigBuilder.openshiftForcePull(true);
+    }
+    if (StringUtils.isBlank(build.getOpenshiftS2iBuildNameSuffix()) &&
+        StringUtils.isNotBlank(genCtx.getOpenshiftS2iBuildNameSuffix())) {
+      buildConfigBuilder.openshiftS2iBuildNameSuffix(genCtx.getOpenshiftS2iBuildNameSuffix());
+    }
+    if (!build.isOpenshiftS2iImageStreamLookupPolicyLocal() && genCtx.isOpenshiftS2iImageStreamLookupPolicyLocal()) {
+      buildConfigBuilder.openshiftS2iImageStreamLookupPolicyLocal(true);
+    }
+    if (StringUtils.isBlank(build.getOpenshiftPullSecret()) && StringUtils.isNotBlank(genCtx.getOpenshiftPullSecret())) {
+      buildConfigBuilder.openshiftPullSecret(genCtx.getOpenshiftPullSecret());
+    }
+    if (StringUtils.isBlank(build.getOpenshiftPushSecret()) && StringUtils.isNotBlank(genCtx.getOpenshiftPushSecret())) {
+      buildConfigBuilder.openshiftPushSecret(genCtx.getOpenshiftPushSecret());
+    }
+    if (StringUtils.isBlank(build.getOpenshiftBuildOutputKind()) && StringUtils.isNotBlank(genCtx.getOpenshiftBuildOutputKind())) {
+      buildConfigBuilder.openshiftBuildOutputKind(genCtx.getOpenshiftBuildOutputKind());
+    }
+    if (StringUtils.isBlank(build.getOpenshiftBuildRecreateMode()) && StringUtils.isNotBlank(genCtx.getOpenshiftBuildRecreate())) {
+      buildConfigBuilder.openshiftBuildRecreateMode(genCtx.getOpenshiftBuildRecreate());
+    }
+    return buildConfigBuilder.build();
   }
 }
