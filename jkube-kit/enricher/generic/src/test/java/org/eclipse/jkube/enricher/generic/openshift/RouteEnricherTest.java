@@ -96,8 +96,8 @@ class RouteEnricherTest {
                 .containsExactly("Service", "Route")
             )
             .last()
-            .extracting("metadata.name", "spec.host", "spec.to.kind", "spec.to.name", "spec.port.targetPort.intVal")
-            .contains("test-svc", "test-svc.jkube.eclipse.org", "Service", "test-svc", 8080);
+            .extracting("metadata.name", "spec.host", "spec.to.kind", "spec.to.name", "spec.port.targetPort.value")
+            .contains("test-svc", "test-svc.jkube.eclipse.org", "Service", "test-svc", "http");
     }
 
     @Test
@@ -173,8 +173,8 @@ class RouteEnricherTest {
 
         // Then
         assertThat(route).isNotNull()
-            .extracting("metadata.name", "spec.host", "spec.to.kind", "spec.to.name", "spec.port.targetPort.intVal")
-            .contains("test-svc", "example.com", "Service", "test-svc", 8080);
+            .extracting("metadata.name", "spec.host", "spec.to.kind", "spec.to.name", "spec.port.targetPort.value")
+            .contains("test-svc", "example.com", "Service", "test-svc", "http");
     }
 
     @Test
@@ -291,8 +291,8 @@ class RouteEnricherTest {
 
         // Then
         assertThat(route).isNotNull()
-                .extracting("metadata.name", "spec.host", "spec.to.kind", "spec.to.name", "spec.port.targetPort.intVal")
-                .contains("test-svc", "example.com", "Service", "test-svc", 8080);
+                .extracting("metadata.name", "spec.host", "spec.to.kind", "spec.to.name", "spec.port.targetPort.value")
+                .contains("test-svc", "example.com", "Service", "test-svc", "http");
     }
 
     @Test
