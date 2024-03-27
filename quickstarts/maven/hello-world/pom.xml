@@ -31,6 +31,7 @@
 
   <properties>
     <jkube.version>${project.version}</jkube.version>
+    <jkube.enricher.jkube-service.type>NodePort</jkube.enricher.jkube-service.type>
   </properties>
 
   <build>
@@ -77,6 +78,9 @@
               <build>
                 <from>openjdk:latest</from>
                 <cmd>java -jar maven/${project.artifactId}-${project.version}.jar</cmd>
+                <ports>
+                  <port>8080</port>
+                </ports>
               </build>
             </image>
           </images>
