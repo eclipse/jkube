@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.eclipse.jkube.kit.common.JavaProject;
 import org.eclipse.jkube.kit.common.KitLogger;
 import org.eclipse.jkube.kit.config.image.GeneratorManager;
 import org.eclipse.jkube.kit.config.image.ImageConfiguration;
@@ -43,6 +44,7 @@ class DefaultGeneratorManagerTest {
     GeneratorContext generatorContext = GeneratorContext.builder()
         .config(processorConfig)
         .logger(logger)
+        .project(new JavaProject(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null))
         .build();
     generatorManager = new DefaultGeneratorManager(generatorContext);
   }
