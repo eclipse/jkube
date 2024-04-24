@@ -21,6 +21,7 @@ import lombok.Singular;
 
 import java.io.File;
 import java.io.Serializable;
+import java.net.URL;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
@@ -37,7 +38,14 @@ import java.util.Properties;
 public class JavaProject implements Serializable {
 
   private static final long serialVersionUID = 6438404976521622633L;
-
+  
+  /**
+   * Properties file for the project
+   *
+   * @param propertiesFile for the project.
+   * @return Properties file for the project.
+   */
+  private URL propertiesFile;
   /**
    * Project's name.
    *
@@ -80,6 +88,13 @@ public class JavaProject implements Serializable {
    * @return The base directory for the project.
    */
   private File baseDirectory;
+  /**
+   * Project's resources directory
+   * 
+   * @param resourcesDirectory resources directory where project resources look for.
+   * @return The resources directory for the project. 
+   */
+  private File resourcesDirectory;
   /**
    * Directory where all build files are located (e.g. target)
    *
@@ -293,6 +308,7 @@ public class JavaProject implements Serializable {
     this.scmTag = scmTag;
     this.buildPackageDirectory = buildPackageDirectory;
     this.maintainers = maintainers;
+    this.resourcesDirectory = baseDirectory != null ? new File(baseDirectory.getAbsolutePath() + "/src/main/resources") : new File("src/main/resources");
   }
 }
 
