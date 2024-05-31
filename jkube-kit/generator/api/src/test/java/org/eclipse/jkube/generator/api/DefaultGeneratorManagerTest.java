@@ -44,7 +44,7 @@ class DefaultGeneratorManagerTest {
     GeneratorContext generatorContext = GeneratorContext.builder()
         .config(processorConfig)
         .logger(logger)
-        .project(new JavaProject(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null))
+        .project(JavaProject.builder().build())
         .build();
     generatorManager = new DefaultGeneratorManager(generatorContext);
   }
